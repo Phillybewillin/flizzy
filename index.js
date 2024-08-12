@@ -263,12 +263,14 @@ app.get('/vidsrc', async (request, reply) => {
 
 const start = async () => {
     try {
-        app.listen({ port: port });
+        const port = process.env.PORT || 3000;  // Use Render's provided port or fallback to 3000
+        await app.listen({ port: port, host: '0.0.0.0' }); // Bind to 0.0.0.0 to listen on all interfaces
         console.log(`AIO Streamer is listening on port http://localhost:${port}`);
     } catch (err) {
         console.error(err);
         process.exit(1);
     }
 };
+
 
 start();
