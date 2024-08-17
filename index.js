@@ -104,7 +104,7 @@ app.get('/vidsrc', async (request, reply) => {
             });
     
             if (res1 && res) {
-                return reply.status(200).send({ res, data: res1 });
+                return reply.status(200).send({ data: res1 });
             } else {
                 return reply.status(404).send({ message: 'Sources not found.' });
             }
