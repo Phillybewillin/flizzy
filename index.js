@@ -103,8 +103,15 @@ app.get('/vidsrc', async (request, reply) => {
                 return reply.status(404).send({ message: err });
             });
     
-            if (res1 && res) {
-                return reply.status(200).send({ data: res1 });
+          if (res1 && res) {
+                const data = {
+                    //res,
+                    data: res1
+                };
+
+                return reply.status(200).send(
+                    data
+                )
             } else {
                 return reply.status(404).send({ message: 'Sources not found.' });
             }
