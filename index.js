@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import fastify from 'fastify';
-import { META } from '@consumet/extensions';
+import { META , MOVIES  } from '@consumet/extensions';
 import { getEPORN_CATEGORIES } from './src/eporner/Categories.js';
 import { getVideoSources } from './src/eporner/Resolver.js';
 import { getSearchResults } from './src/eporner/Search.js';
@@ -50,50 +50,68 @@ app.get('/vidsrc', async (request, reply) => {
         return reply.status(400).send({ message: "The 'provider' query is required" });
     }
 
-    const fetchFlixhq = async (id, seasonNumber, episodeNumber) => {
+ const fetchFlixhq = async (id, seasonNumber, episodeNumber) => {
         let tmdb = new META.TMDB(tmdbApi);
+        const flixhq = new MOVIES.FlixHQ();
+        let type = seasonNumber && episodeNumber ? 'show' : 'movie';
+    
+        try {
+            console.log(`Fetching media info for ID: ${id} and type: ${type}`);
+            const res = await tmdb.fetchMediaInfo(id, type);
+             console.log(res.title)
+            const flixhqResults = await flixhq.search(res.title);
+            //console.log('flixhqResults:', flixhqResults);
+            
+            const flixhqItem = flixhqResults.results.find(item => {
+                if (item.releaseDate) {
+                  const year = res.releaseDate.substring(0, 4);
+                    console.log('item.releaseDate:', item.releaseDate, 'year:', year , 'title:', item.title , 'res.title:', res.title);
+                    return item.releaseDate === year && item.title === res.title ? true : false;
+                } 
 
-        let type;
+                return item.title === res.title;
+                // Fallback: check if title matches, even if releaseDate is undefined
+            
+              });
+            if (!flixhqItem) {
+                console.log('flixhqItem:', flixhqItem);
+                return reply.status(404).send({ message: 'Matching movie not found on FlixHQ.' });
+            }
+    
+            const mid = flixhqItem.id; // Full ID, e.g., 'movie/watch-fly-me-to-the-moon-111118'
+           // const episodeId = mid.split('-').pop(); // Extracted number, e.g., '111118'
+            let episodeId;
 
         if (seasonNumber && episodeNumber) {
-            type = 'show';
-        } else {
-            type = 'movie';
-        }
-
-        try {
-            const res = await tmdb.fetchMediaInfo(id, type);
-            const mid = res.id;
-            let episodeId;
-            if (seasonNumber && episodeNumber) {
-                const season = res.seasons.find(season => season.season === seasonNumber);
-                if (!season) {
-                    return reply.status(404).send({ message: 'Season not found' });
-                }
-                const episode = season.episodes.find(episode => episode.episode === episodeNumber);
-                if (!episode) {
-                    return reply.status(404).send({ message: 'Episode not found' });
-                }
-                episodeId = episode.id;
-            } else {
-                episodeId = res.episodeId;
+            const season = res.seasons.find(season => season.season === seasonNumber);
+            if (!season) {
+                return reply.status(404).send({ message: 'Season not found' });
             }
+            const episode = season.episodes.find(episode => episode.episode === episodeNumber);
+            if (!episode) {
+                return reply.status(404).send({ message: 'Episode not found' });
+            }
+            episodeId = episode.id;
+        } else {
+            episodeId = mid.split('-').pop();;
+        }
+            console.log('Selected MID:', mid);
+            console.log('Selected Episode ID:', episodeId);
+    
             const res1 = await fetchSources(episodeId, mid).catch((err) => {
+                console.log('res1:', episodeId, mid, err);
                 return reply.status(404).send({ message: err });
             });
+    
             if (res1 && res) {
-                const data = {
-                    //res,
-                    data: res1
-                };
-
-                return reply.status(200).send(
-                    data
-                )
+                return reply.status(200).send({ res, data: res1 });
             } else {
                 return reply.status(404).send({ message: 'Sources not found.' });
             }
         } catch (error) {
+           // console.error('Error fetching media info:', error);
+            //console.error('TMDB class version:', tmdb.version);
+           // console.error('Library version:', require('@consumet/extensions/package.json').version);
             return reply.status(500).send({ message: 'Something went wrong. Contact developer for help.' });
         }
     };
