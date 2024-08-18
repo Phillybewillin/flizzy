@@ -65,13 +65,14 @@ app.get('/vidsrc', async (request, reply) => {
             const flixhqItem = flixhqResults.results.find(item => {
                 if (item.releaseDate) {
                   const year = res.releaseDate.substring(0, 4);
-                    console.log('item.releaseDate:', item.releaseDate, 'year:', year , 'title:', item.title , 'res.title:', res.title);
-                    return item.releaseDate === year && item.title === res.title ? true : false;
-                } 
-
-                return item.title === res.title;
-                // Fallback: check if title matches, even if releaseDate is undefined
-            
+                  console.log('item.releaseDate:', item.releaseDate, 'year:', year, 'title:', item.title, 'res.title:', res.title);
+                  return item.releaseDate === year && item.title === res.title && item.type === res.type;
+                }
+              
+                console.log('using fallback');
+              
+                // If item.releaseDate is undefined, fallback to comparing title and type
+                return item.title === res.title && item.type === res.type;
               });
             if (!flixhqItem) {
                 console.log('flixhqItem:', flixhqItem);
