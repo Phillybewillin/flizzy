@@ -76,14 +76,16 @@ app.get('/vidsrc', async (request, reply) => {
                   return item.releaseDate === year && item.title === res.title && item.type === res.type;
                   
                 }
-                if(item.releaseDate === undefined){
+              if(item.releaseDate === undefined){
                     //console.log('release date undefined')
                     if(item.type === 'TV Series'){
-                        //console.log('type 2: TV Series true' , res.totalSeasons, item.seasons);
-                          return item.title === res.title && item.seasons === res.totalSeasons;
+                        //console.log('type 2: TV Series true' , item.seasons);
+                        return item.title === res.title && item.type === res.type;
+                        
                     }
-                    return item.title === res.title && item.type === res.type && item.seasons === res.totalSeasons;
+                    return item.title === res.title && item.type === res.type;
                   }
+              
               
                 console.log('fallback');
               
