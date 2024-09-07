@@ -91,7 +91,7 @@ app.get('/vidsrc', async (request, reply) => {
                 return item.title === res.title && item.type === res.type;
               });
             if (!flixhqItem) {
-                console.log('No matching movie found on FlixHQ.');
+                console.log('No matching movie found on FlixHQ.' , item.title , item.type ,'res.title:', res.title , 'res.type:', res.type );
                 return reply.status(404).send({ message: 'Matching movie not found on FlixHQ.' });
             }
     
