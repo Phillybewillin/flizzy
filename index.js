@@ -51,7 +51,7 @@ app.get('/vidsrc', async (request, reply) => {
         return reply.status(400).send({ message: "The 'provider' query is required" });
     }
 
- const fetchFlixhq = async (id, seasonNumber, episodeNumber) => {
+  const fetchFlixhq = async (id, seasonNumber, episodeNumber) => {
         let tmdb = new META.TMDB(tmdbApi);
         const flixhq = new MOVIES.FlixHQ();
         let type = seasonNumber && episodeNumber ? 'show' : 'movie';
@@ -61,87 +61,65 @@ app.get('/vidsrc', async (request, reply) => {
             const res = await tmdb.fetchMediaInfo(id, type);
 
              //console.log(res)
-             const resAbdolute = unidecode(res.title)
+            const resAbdolute = unidecode(res.title)
             const flixhqResults = await flixhq.search(unidecode(resAbdolute));
-            //console.log('flixhqResults:', flixhqResults);
+             //console.log('flixhqResults:', flixhqResults);
             
             const flixhqItem = flixhqResults.results.find(item => {
                 if (item.releaseDate !== undefined) {
                   const year = res.releaseDate.substring(0, 4);
                   //console.log('item.releaseDate:', item.releaseDate, 'year:', year, 'title:', item.title, 'res.title:', res.title , 'type:', item.type, 'res.type:', res.type, 'seasons:', item.seasons, 'res.totalSeasons:', res.totalSeasons);
                   if(item.type === 'TV Series'){
-                    //console.log('type: TV Series true' , res.totalSeasons, item.seasons);
+                   // console.log('type: TV Series true' , res.totalSeasons, item.seasons);
                       return item.releaseDate === year && item.title === res.title && item.seasons === res.totalSeasons;
                   }
                   return item.releaseDate === year && item.title === res.title && item.type === res.type;
                   
                 }
-              if(item.releaseDate === undefined){
+                if(item.releaseDate === undefined){
                     //console.log('release date undefined')
                     if(item.type === 'TV Series'){
-                        //console.log('type 2: TV Series true' , item.seasons);
-                        return item.title === res.title && item.type === res.type;
-                        
+                        //console.log('type 2: TV Series true' , res.totalSeasons, item.seasons);
+                          return item.title === res.title && item.seasons === res.totalSeasons;
                     }
-                    return item.title === res.title && item.type === res.type;
+                    return item.title === res.title && item.type === res.type && item.seasons === res.totalSeasons;
                   }
               
-              
-                console.log('fallback');
+                //console.log('fallback');
               
                 // If item.releaseDate is undefined, fallback to comparing title and type
                 return item.title === res.title && item.type === res.type;
               });
             if (!flixhqItem) {
-                //console.log('flixhqItem:', flixhqItem);
+                console.log('No matching movie found on FlixHQ.');
                 return reply.status(404).send({ message: 'Matching movie not found on FlixHQ.' });
             }
     
             const mid = flixhqItem.id ; // Full ID, e.g., 'movie/watch-fly-me-to-the-moon-111118'
            // const episodeId = mid.split('-').pop(); // Extracted number, e.g., '111118'
-          const flixMedia = await flixhq.fetchMediaInfo(mid)
-            //console.log('flix media info ', flixMedia);
+            const flixMedia = await flixhq.fetchMediaInfo(mid)
+           // console.log('flix media info ', flixMedia);
           
             let episodeId;
 
-            
-
             if (mid.startsWith('movie/')) {
-                const parts = mid.split('-');
-                episodeId = parts.pop(); 
+                //const parts = mid.split('-');
+                episodeId =mid.split('-').pop();; 
                 } else if (mid.startsWith('tv/') && seasonNumber && episodeNumber) {
-               //console.log(' 1 seasonNumber:', seasonNumber, 'episodeNumber:', episodeNumber);
-                const season = res.seasons.find(season => season.season === seasonNumber);
-                //console.log(' 2 season:', season);
-                if (!season) {
-                  return reply.status(404).send({ message: 'Season not found' });
-                }
-              
-                const episode = season.episodes.find(episode => episode.episode === episodeNumber);
-                //console.log(' 3 episode:', episode);
-                
-                if (episode.id === undefined) {
                     const episodex = flixMedia.episodes.find(episode => episode.number === episodeNumber);
 
-                    //console.log('line 125' ,episodex, episode.id)
-               
-                    episodeId = episodex.id
-                  }else{
+                    if (!episodex) {
+                        console.log('Episode not found.' );
+                        return reply.status(404).send({ message: 'Episode not found' });
+                    }
 
-                    episodeId = episode.id;
-                  }
-                  if (!episode) {
-                    return reply.status(404).send({ message: 'Episode not found' });
-                  }
-
-                  
-
+                    episodeId = episodex.id;
+              
               }
-            console.log('Selected MID:', mid);
-            console.log('Selected Episode ID:', episodeId);
-    
+            console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
+
             const res1 = await fetchSources(episodeId, mid).catch((err) => {
-                //console.log('res1:', episodeId, mid, err);
+                //console.log('res1:', episodeId, mid);
                 return reply.status(404).send({ message: err });
             });
     
@@ -155,7 +133,6 @@ app.get('/vidsrc', async (request, reply) => {
             return reply.status(500).send({ message: 'Something went wrong. Contact developer for help.' });
         }
     };
-
     const fetchVidsrc = async (id, seasonNumber, episodeNumber) => {
         let type;
 
