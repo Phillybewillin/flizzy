@@ -106,7 +106,7 @@ app.get('/vidsrc', async (request, reply) => {
                 //const parts = mid.split('-');
                 episodeId =mid.split('-').pop();; 
                 } else if (mid.startsWith('tv/') && seasonNumber && episodeNumber) {
-                    const episodex = flixMedia.episodes.find(episode => episode.number === episodeNumber);
+                   const episodex = flixMedia.episodes.find(episode => episode.number === episodeNumber && episode.season === seasonNumber);
 
                     if (!episodex) {
                         console.log('Episode not found.' );
