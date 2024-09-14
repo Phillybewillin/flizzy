@@ -18,8 +18,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "fastify": "^4.28.1",
+    "install": "^0.13.0",
     "jsdom": "^24.1.1",
     "node-fetch": "^3.3.2",
-    "unidecode": "^1.1.0"
+    "npm": "^10.8.2",
+    "unidecode": "^1.1.0" 
   }
 }
