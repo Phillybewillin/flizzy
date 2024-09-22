@@ -18,7 +18,7 @@ app.register(cors, {
 app.get('/', async (request, reply) => {
     return {
         intro: "Welcome to the unofficial multi provider resolver and eporner api currently the ONLY All-In-One solution aswell as additional Eporner resolver.",
-        documentation: "Please see github repo : https://github.com/Inside4ndroid/AIO-StreamSource",
+        documentation: "Pdiddy is a ....",
         author: "This api is developed and created by Inside4ndroid"
     };
 });
@@ -50,52 +50,27 @@ app.get('/vidsrc', async (request, reply) => {
             const flixhqResults = await flixhq.search(unidecode(resAbdolute));
              //console.log('flixhqResults:', flixhqResults);
             
-             const flixhqItem = flixhqResults.results.find(item => {
-                if (item.releaseDate !== undefined) {
-                  const year = res.releaseDate.substring(0, 4);
-                  if (item.type === 'TV Series') {
-                    //console.log('type 1: TV Series true', res.totalSeasons, item.seasons);
-                    if (item.seasons === res.totalSeasons) {
-                      return item.releaseDate === year && item.title === res.title;
-                    } else {
-                      // Fallback to check for +1 or -1 seasons
-                      const seasonsDiff = Math.abs(item.seasons - res.totalSeasons);
-                      if (seasonsDiff <= 1) {
-                        return item.releaseDate === year && item.title === res.title;
-                      }
-                    }
-                  } else if (item.type === 'Movie') {
-                    return item.releaseDate === year && item.title === res.title;
-                  }
-                  return item.title === res.title && item.type === res.type;
-                }
-                if (item.releaseDate === undefined) {
-                  //console.log('release date undefined')
-                  if (item.type === 'TV Series') {
-                    //console.log('type 2: TV Series true', res.totalSeasons, item.seasons);
-                    if (item.seasons === res.totalSeasons) {
-                      return item.title === res.title;
-                    } else {
-                      // Fallback to check for +1 or -1 seasons
-                      const seasonsDiff = Math.abs(item.seasons - res.totalSeasons);
-                      if (seasonsDiff <= 1) {
-                        return item.title === res.title;
-                      }
-                    }
-                  } else if (item.type === 'Movie') {
-                    return item.title === res.title;
-                  }
-                  return item.title === res.title;
-                }
-              });
-              
-              if (!flixhqItem) {
-                console.log('No matching movie found on FlixHQ.' , item.title , item.type ,'res.title:', res.title , 'res.type:', res.type );
-                return reply.status(404).send({ message: 'Matching movie not found on FlixHQ.' });
+              const flixhqItem = flixhqResults.results.reduce((bestMatch, item) => {
+              const score = calculateScore(item, res);
+              if (!bestMatch || score > bestMatch.score) {
+                //console.log('Best match:', item.title, item.id, score);
+                return { item, score };
+              }
+              //console.log('Not best match:', item.id, bestMatch);
+              return bestMatch;
+            }, { item: null, score: 0 });
+            
+            function calculateScore(item, res) {
+              let score = 0;
+              if (item.title === res.title) score += 10;
+              if (item.type === res.type) score += 5;
+              if (item.releaseDate && item.releaseDate.substring(0, 4) === res.releaseDate.substring(0, 4)) score += 5;
+              if (item.seasons === res.totalSeasons) score += 5;
+              //console.log('score:',item.title, score);
+              // Add more conditions as needed
+              return score;
             }
-    
-            const mid = flixhqItem.id ; // Full ID, e.g., 'movie/watch-fly-me-to-the-moon-111118'
-           // const episodeId = mid.split('-').pop(); // Extracted number, e.g., '111118'
+            // const episodeId = mid.split('-').pop(); // Extracted number, e.g., '111118'
             const flixMedia = await flixhq.fetchMediaInfo(mid)
 
            //console.log('flix media info ', flixMedia , 'mid:', mid);
