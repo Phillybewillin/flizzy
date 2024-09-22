@@ -50,7 +50,7 @@ app.get('/vidsrc', async (request, reply) => {
             const flixhqResults = await flixhq.search(unidecode(resAbdolute));
              //console.log('flixhqResults:', flixhqResults);
             
-              const flixhqItem = flixhqResults.results.reduce((bestMatch, item) => {
+                const flixhqItem = flixhqResults.results.reduce((bestMatch, item) => {
               const score = calculateScore(item, res);
               if (!bestMatch || score > bestMatch.score) {
                 //console.log('Best match:', item.title, item.id, score);
@@ -70,6 +70,13 @@ app.get('/vidsrc', async (request, reply) => {
               // Add more conditions as needed
               return score;
             }
+            
+            if (!flixhqItem.item) {
+              console.log('No matching movie found on FlixHQ.', item.title, item.type, 'res.title:', res.title, 'res.type:', res.type);
+              return reply.status(404).send({ message: 'Matching movie not found on FlixHQ.' });
+            }
+            
+            const mid = flixhqItem.item.id;
             // const episodeId = mid.split('-').pop(); // Extracted number, e.g., '111118'
             const flixMedia = await flixhq.fetchMediaInfo(mid)
 
