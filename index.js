@@ -45,12 +45,12 @@ app.get('/vidsrc', async (request, reply) => {
             const res = await tmdb.fetchMediaInfo(id, type);
 
             //console.log(res)
-            const resAbdolute = unidecode(res.title)
+            const resAbdolute = unidecode(res.title);
             console.log('resAbdolute:', resAbdolute);
             const flixhqResults = await flixhq.search(unidecode(resAbdolute));
              //console.log('flixhqResults:', flixhqResults);
             
-                const flixhqItem = flixhqResults.results.reduce((bestMatch, item) => {
+            const flixhqItem = flixhqResults.results.reduce((bestMatch, item) => {
               const score = calculateScore(item, res);
               if (!bestMatch || score > bestMatch.score) {
                 //console.log('Best match:', item.title, item.id, score);
@@ -60,21 +60,21 @@ app.get('/vidsrc', async (request, reply) => {
               return bestMatch;
             }, { item: null, score: 0 });
             
-            function calculateScore(item, res) {
+             function calculateScore(item, res) {
               let score = 0;
-              if (item.title === res.title) score += 10;
+              if (item.title === res.title) score += 20;
               if (item.type === res.type) score += 5;
-              if (item.releaseDate && item.releaseDate.substring(0, 4) === res.releaseDate.substring(0, 4)) score += 5;
-              if (item.seasons === res.totalSeasons) score += 5;
+              if (item.releaseDate === res.releaseDate.substring(0, 4)) score += 10;
+              if (item.seasons === res.totalSeasons) score += 10;
               //console.log('score:',item.title, score);
               // Add more conditions as needed
               return score;
-            }
+            };
             
             if (!flixhqItem.item) {
               console.log('No matching movie found on FlixHQ.', item.title, item.type, 'res.title:', res.title, 'res.type:', res.type);
               return reply.status(404).send({ message: 'Matching movie not found on FlixHQ.' });
-            }
+            };
             
             const mid = flixhqItem.item.id;
             // const episodeId = mid.split('-').pop(); // Extracted number, e.g., '111118'
@@ -86,7 +86,7 @@ app.get('/vidsrc', async (request, reply) => {
 
             if (mid.startsWith('movie/')) {
                 //const parts = mid.split('-');
-                episodeId = mid.split('-').pop();; 
+                episodeId = mid.split('-').pop();
                 } else if (mid.startsWith('tv/') && seasonNumber && episodeNumber) {
 
                     const episodex = flixMedia.episodes.find(episode => episode.number === episodeNumber && episode.season === seasonNumber);
