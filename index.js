@@ -2,24 +2,18 @@ import 'dotenv/config';
 import fastify from 'fastify';
 import { META , MOVIES } from '@consumet/extensions';
 import unidecode from 'unidecode';
-import proxy from '@fastify/http-proxy';
-//import { fetchSources } from './src/flixhq/flixhq.js';
+import { fetchSources } from './src/flixhq/flixhq.js';
 import cors from '@fastify/cors';
 
 const app = fastify();
+
 const tmdbApi = process.env.TMDB_KEY;
 const port = process.env.PORT;
 
 app.register(cors, { 
-    origin: 'https://zilla-xr.xyz',
+    origin: 'http://localhost:5173',
     methods: ['GET', 'POST'],
   })
-
-app.register(proxy, {
-    upstream: 'http://localhost:5173',
-    prefix: '/proxy',
-
-});
 
 app.get('/', async (request, reply) => {
     return {
@@ -29,7 +23,7 @@ app.get('/', async (request, reply) => {
     };
 });
 
-app.get('/proxy/vidsrc', async (request, reply) => {
+app.get('/vidsrc', async (request, reply) => {
    
     const id = request.query.id;
     const seasonNumber = parseInt(request.query.s, 10);
@@ -42,9 +36,10 @@ app.get('/proxy/vidsrc', async (request, reply) => {
 
     const fetchFlixhq = async (id, seasonNumber, episodeNumber) => {
         let tmdb = new META.TMDB(tmdbApi);
-        const flixhq = new MOVIES.FlixHQ();
+        let flixhq = new MOVIES.FlixHQ();
+        let goku = new MOVIES.Goku();
         let type = seasonNumber && episodeNumber ? 'show' : 'movie';
-        //console.log(` 1 Fetching media info for ID: ${id} and type: ${type}`);
+        console.log(` 1 Fetching media info for ID: ${id} and type: ${type}`);
          
         try {
             //console.log(` 2 Fetching media info for ID: ${id} and type: ${type}`);
@@ -55,11 +50,13 @@ app.get('/proxy/vidsrc', async (request, reply) => {
             console.log('resAbdolute:', resAbdolute);
             const flixhqResults = await flixhq.search(unidecode(resAbdolute));
             //console.log('flixhqResults:', flixhqResults);
-            
-            const flixhqItem = flixhqResults.results.reduce((bestMatch, item) => {
+            const gokuResults = await goku.search(unidecode(resAbdolute));
+            //console.log('gokuResults:', gokuResults);
+
+            const flixhqItem = gokuResults.results.reduce((bestMatch, item) => {
               const score = calculateScore(item, res);
               if (!bestMatch || score > bestMatch.score) {
-                //console.log('Best match:', item.title, item.id, score);
+                console.log('Best match:', item.title, item.id, score);
                 return { item, score };
               }
               //console.log('Not best match:', item.id, bestMatch);
@@ -83,20 +80,19 @@ app.get('/proxy/vidsrc', async (request, reply) => {
             }
             
             const mid = flixhqItem.item.id;
-            //console.log('Mid:', mid)
+            console.log('Mid:', mid)
             
-            // Full ID, e.g., 'movie/watch-fly-me-to-the-moon-111118'
-           // const episodeId = mid.split('-').pop(); // Extracted number, e.g., '111118'
-            const flixMedia = await flixhq.fetchMediaInfo(mid)
+            const flixMedia = await goku.fetchMediaInfo(mid)
 
-           //console.log('flix media info ', flixMedia , 'mid:', mid);
+           //console.log('flix media info ', flixMedia );
           
             let episodeId;
 
-            if (mid.startsWith('movie/')) {
+            if (mid.startsWith('watch-movie/')) {
                 //const parts = mid.split('-');
-                episodeId = mid.split('-').pop();; 
-                } else if (mid.startsWith('tv/') && seasonNumber && episodeNumber) {
+                episodeId = flixMedia.episodes[0].id;
+                console.log('wSelected MID:', mid ,'Selected Episode ID:', episodeId);
+                } else if (mid.startsWith('series/') && seasonNumber && episodeNumber) {
 
                     const episodex = flixMedia.episodes.find(episode => episode.number === episodeNumber && episode.season === seasonNumber);
 
@@ -108,23 +104,24 @@ app.get('/proxy/vidsrc', async (request, reply) => {
                     episodeId = episodex.id;
               
               }
-           console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
+            console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
+            const didi = await goku.fetchEpisodeSources(episodeId.toString(), mid.toString());
+            console.log('didi:' , didi);
+      
+          
 
-          const res1 = await flixhq.fetchEpisodeSources(episodeId, mid).catch((err) => {
-    console.error('Error fetching episode sources:', err);
-    return reply.status(404).send({ message: 'Invalid request.' });
-});
-
-console.log('res1:', res1);
-
-if (res1 && res) {
-    return reply.status(200).send({ data: res1 });
-} else {
-    return reply.status(404).send({ message: 'Sources not found.' });
-}
+            const res1 =  await goku.fetchEpisodeSources(episodeId.toString(), mid.toString()).catch((err) => {
+                return reply.status(404).send({ message: err });
+            });
+    
+            if (res1 && res) {
+                return reply.status(200).send({ data: res1 });
+            } else {
+                return reply.status(404).send({ message: 'Sources not found.' });
+            }
         } catch (error) {
             //console.error('TMDB class version:', tmdb.version);
-            return reply.status(500).send({ message: 'Something went wrong. Contact developer for help.' });
+            return reply.status(500).send({ message: 'Something went wrong. Contact developer for help.' , error });
         }
     };
     
