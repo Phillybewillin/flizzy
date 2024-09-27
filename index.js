@@ -104,18 +104,20 @@ app.get('/vidsrc', async (request, reply) => {
               }
            console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
 
+          console.log(typeof episodeId, typeof mid)
 
-           const res1 =  await flixhq.fetchEpisodeSources(episodeId.toString(), mid.toString()).catch((err) => {
-                return reply.status(404).send({ message: 'Invalid request.' });
-            });
-             console.log('res1: working ', res1);
-    
-    
+           try {
+            const res1 = await flixhq.fetchEpisodeSources(String(episodeId), String(mid));
+            console.log('res1 true:' , res1);
             if (res1 && res) {
                 return reply.status(200).send({ data: res1 });
             } else {
                 return reply.status(404).send({ message: 'Sources not found.' });
             }
+        } catch (err) {
+            console.error('Error fetching episode sources:', err);
+            return reply.status(500).send({ message: 'Error fetching episode sources' });
+        }
         } catch (error) {
             //console.error('TMDB class version:', tmdb.version);
             return reply.status(500).send({ message: 'Something went wrong. Contact developer for help.' });
