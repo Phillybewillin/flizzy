@@ -11,7 +11,7 @@ const tmdbApi = process.env.TMDB_KEY;
 const port = process.env.PORT;
 
 app.register(cors, { 
-    origin: 'http://localhost:5173',
+    origin: 'https://zilla-xr.xyz',
     methods: ['GET', 'POST'],
   })
 
