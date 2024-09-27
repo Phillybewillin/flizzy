@@ -34,21 +34,21 @@ app.get('/vidsrc', async (request, reply) => {
         return reply.status(400).send({ message: "The 'provider' query is required" });
     }
 
-    const fetchFlixhq = async (id, seasonNumber, episodeNumber) => {
+   const fetchFlixhq = async (id, seasonNumber, episodeNumber) => {
         let tmdb = new META.TMDB(tmdbApi);
         const flixhq = new MOVIES.FlixHQ();
         let type = seasonNumber && episodeNumber ? 'show' : 'movie';
-        // console.log(` 1 Fetching media info for ID: ${id} and type: ${type}`);
+        //console.log(` 1 Fetching media info for ID: ${id} and type: ${type}`);
          
         try {
             //console.log(` 2 Fetching media info for ID: ${id} and type: ${type}`);
             const res = await tmdb.fetchMediaInfo(id, type);
 
             //console.log(res)
-            const resAbdolute = unidecode(res.title);
+            const resAbdolute = unidecode(res.title)
             console.log('resAbdolute:', resAbdolute);
             const flixhqResults = await flixhq.search(unidecode(resAbdolute));
-             //console.log('flixhqResults:', flixhqResults);
+            //console.log('flixhqResults:', flixhqResults);
             
             const flixhqItem = flixhqResults.results.reduce((bestMatch, item) => {
               const score = calculateScore(item, res);
@@ -60,7 +60,7 @@ app.get('/vidsrc', async (request, reply) => {
               return bestMatch;
             }, { item: null, score: 0 });
             
-             function calculateScore(item, res) {
+            function calculateScore(item, res) {
               let score = 0;
               if (item.title === res.title) score += 20;
               if (item.type === res.type) score += 5;
@@ -69,15 +69,18 @@ app.get('/vidsrc', async (request, reply) => {
               //console.log('score:',item.title, score);
               // Add more conditions as needed
               return score;
-            };
+            }
             
             if (!flixhqItem.item) {
               console.log('No matching movie found on FlixHQ.', item.title, item.type, 'res.title:', res.title, 'res.type:', res.type);
               return reply.status(404).send({ message: 'Matching movie not found on FlixHQ.' });
-            };
+            }
             
             const mid = flixhqItem.item.id;
-            // const episodeId = mid.split('-').pop(); // Extracted number, e.g., '111118'
+            //console.log('Mid:', mid)
+            
+            // Full ID, e.g., 'movie/watch-fly-me-to-the-moon-111118'
+           // const episodeId = mid.split('-').pop(); // Extracted number, e.g., '111118'
             const flixMedia = await flixhq.fetchMediaInfo(mid)
 
            //console.log('flix media info ', flixMedia , 'mid:', mid);
@@ -86,7 +89,7 @@ app.get('/vidsrc', async (request, reply) => {
 
             if (mid.startsWith('movie/')) {
                 //const parts = mid.split('-');
-                episodeId = mid.split('-').pop();
+                episodeId = mid.split('-').pop();; 
                 } else if (mid.startsWith('tv/') && seasonNumber && episodeNumber) {
 
                     const episodex = flixMedia.episodes.find(episode => episode.number === episodeNumber && episode.season === seasonNumber);
@@ -99,10 +102,10 @@ app.get('/vidsrc', async (request, reply) => {
                     episodeId = episodex.id;
               
               }
-            console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
+           // console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
 
-            const res1 = await fetchSources(episodeId, mid).catch((err) => {
-                //console.log('res1:', episodeId, mid);
+
+            const res1 =  await flixhq.fetchEpisodeSources(episodeId.toString(), mid.toString()).catch((err) => {
                 return reply.status(404).send({ message: err });
             });
     
