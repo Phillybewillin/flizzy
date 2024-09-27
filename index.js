@@ -2,7 +2,7 @@ import 'dotenv/config';
 import fastify from 'fastify';
 import { META , MOVIES } from '@consumet/extensions';
 import unidecode from 'unidecode';
-import { fetchSources } from './src/flixhq/flixhq.js';
+//import { fetchSources } from './src/flixhq/flixhq.js';
 import cors from '@fastify/cors';
 
 const app = fastify();
@@ -18,7 +18,7 @@ app.register(cors, {
 app.get('/', async (request, reply) => {
     return {
         intro: "Welcome to the unofficial multi provider resolver and eporner api currently the ONLY All-In-One solution aswell as additional Eporner resolver.",
-        documentation: "Pdiddy is a ....",
+        documentation: "Please see github repo : https://github.com/Inside4ndroid/AIO-StreamSource",
         author: "This api is developed and created by Inside4ndroid"
     };
 });
@@ -34,7 +34,7 @@ app.get('/vidsrc', async (request, reply) => {
         return reply.status(400).send({ message: "The 'provider' query is required" });
     }
 
-   const fetchFlixhq = async (id, seasonNumber, episodeNumber) => {
+    const fetchFlixhq = async (id, seasonNumber, episodeNumber) => {
         let tmdb = new META.TMDB(tmdbApi);
         const flixhq = new MOVIES.FlixHQ();
         let type = seasonNumber && episodeNumber ? 'show' : 'movie';
