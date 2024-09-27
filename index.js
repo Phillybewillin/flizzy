@@ -105,11 +105,8 @@ app.get('/vidsrc', async (request, reply) => {
               
               }
             console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
-            const didi = await goku.fetchEpisodeSources(episodeId.toString(), mid.toString());
-            console.log('didi:' , didi);
+           
       
-          
-
             const res1 =  await goku.fetchEpisodeSources(episodeId.toString(), mid.toString()).catch((err) => {
                 return reply.status(404).send({ message: err });
             });
