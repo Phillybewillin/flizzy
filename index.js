@@ -2,18 +2,24 @@ import 'dotenv/config';
 import fastify from 'fastify';
 import { META , MOVIES } from '@consumet/extensions';
 import unidecode from 'unidecode';
+import proxy from '@fastify/http-proxy';
 //import { fetchSources } from './src/flixhq/flixhq.js';
 import cors from '@fastify/cors';
 
 const app = fastify();
-
 const tmdbApi = process.env.TMDB_KEY;
 const port = process.env.PORT;
 
 app.register(cors, { 
-    origin: 'https://zilla-xr.xyz',
+    origin: 'http://localhost:5173',
     methods: ['GET', 'POST'],
   })
+
+app.register(proxy, {
+    upstream: 'http://localhost:5173',
+    prefix: '/proxy',
+
+});
 
 app.get('/', async (request, reply) => {
     return {
@@ -23,7 +29,7 @@ app.get('/', async (request, reply) => {
     };
 });
 
-app.get('/vidsrc', async (request, reply) => {
+app.get('/proxy/vidsrc', async (request, reply) => {
    
     const id = request.query.id;
     const seasonNumber = parseInt(request.query.s, 10);
