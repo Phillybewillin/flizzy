@@ -16,7 +16,7 @@ app.register(cors, {
   })
 
 app.register(proxy, {
-    upstream: 'http://localhost:5173',
+    upstream: 'http://flizzy.onrender.com',
     prefix: '/proxy',
 
 });
