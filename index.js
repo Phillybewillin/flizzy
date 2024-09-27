@@ -102,7 +102,7 @@ app.get('/vidsrc', async (request, reply) => {
                     episodeId = episodex.id;
               
               }
-           // console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
+           console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
 
 
             const res1 =  await flixhq.fetchEpisodeSources(episodeId.toString(), mid.toString()).catch((err) => {
