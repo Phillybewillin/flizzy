@@ -105,9 +105,11 @@ app.get('/vidsrc', async (request, reply) => {
            console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
 
 
-            const res1 =  await flixhq.fetchEpisodeSources(episodeId.toString(), mid.toString()).catch((err) => {
-                return reply.status(404).send({ message: err });
+           const res1 =  await flixhq.fetchEpisodeSources(episodeId.toString(), mid.toString()).catch((err) => {
+                return reply.status(404).send({ message: 'Invalid request.' });
             });
+             console.log('res1: working ', res1);
+    
     
             if (res1 && res) {
                 return reply.status(200).send({ data: res1 });
@@ -132,7 +134,7 @@ const start = async () => {
     try {
         const port = process.env.PORT || 3000;  // Use Render's provided port or fallback to 3000
         await app.listen({ port: port, host: '0.0.0.0' }); // Bind to 0.0.0.0 to listen on all interfaces
-        console.log(`AIO Streamer is listening on port http://localhost:${port}`);
+        console.log(`AIO Streamer is listening on ${process.env.URL}`);
     } catch (err) {
         console.error(err);
         process.exit(1);
