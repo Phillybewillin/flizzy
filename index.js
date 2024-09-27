@@ -11,12 +11,12 @@ const tmdbApi = process.env.TMDB_KEY;
 const port = process.env.PORT;
 
 app.register(cors, { 
-    origin: 'http://localhost:5173 , https://zilla-xr.xyz ',
+    origin: 'https://zilla-xr.xyz',
     methods: ['GET', 'POST'],
   })
 
 app.register(proxy, {
-    upstream: 'http://flizzy.onrender.com',
+    upstream: 'http://130.61.171.71:80',
     prefix: '/proxy',
 
 });
@@ -108,11 +108,11 @@ app.get('/proxy/vidsrc', async (request, reply) => {
                     episodeId = episodex.id;
               
               }
-           // console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
-           console.log(typeof episodeId, typeof mid)
+           console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
+           //console.log(typeof episodeId, typeof mid)
 
             const res1 =  await flixhq.fetchEpisodeSources(episodeId.toString(), mid.toString()).catch((err) => {
-                return reply.status(404).send({ message: 'Invalid request.' });
+                return reply.status(404).send({ message: 'Invalid request. nix' });
             });
              console.log('res1: working ', res1);
     
