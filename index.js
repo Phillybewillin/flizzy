@@ -15,21 +15,15 @@ app.register(cors, {
     methods: ['GET', 'POST'],
   })
 
-app.register(proxy, {
-    upstream: 'http://130.61.171.71:80',
-    prefix: '/proxy',
-
-});
-
 app.get('/', async (request, reply) => {
     return {
-        intro: "Welcome to the unofficial multi provider resolver and eporner api currently the ONLY All-In-One solution aswell as additional Eporner resolver.",
+        intro: "Welcomez to the unofficial multi provider resolver and eporner api currently the ONLY All-In-One solution aswell as additional Eporner resolver.",
         documentation: "Please see github repo : https://github.com/Inside4ndroid/AIO-StreamSource",
         author: "This api is developed and created by Inside4ndroid"
     };
 });
 
-app.get('/proxy/vidsrc', async (request, reply) => {
+app.get('/vidsrc', async (request, reply) => {
    
     const id = request.query.id;
     const seasonNumber = parseInt(request.query.s, 10);
@@ -111,8 +105,8 @@ app.get('/proxy/vidsrc', async (request, reply) => {
            console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
            //console.log(typeof episodeId, typeof mid)
 
-            const res1 =  await flixhq.fetchEpisodeSources(episodeId.toString(), mid.toString()).catch((err) => {
-                return reply.status(404).send({ message: 'Invalid request. nix' });
+            const res1 =  await flixhq.fetchEpisodeSources(episodeId, mid).catch((err) => {
+                return reply.status(404).send({ message: 'Invalid request. nix' , err});
             });
              console.log('res1: working ', res1);
     
