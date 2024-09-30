@@ -92,14 +92,16 @@ app.get('/vidsrc', async (request, reply) => {
                 episodeId = mid.split('-').pop();
                 } else if (mid.startsWith('tv/') && seasonNumber && episodeNumber) {
 
-                    const episodex = flixMedia.episodes.find(episode => episode.number === episodeNumber && episode.season === seasonNumber);
-
+                    const episodesInSeason = flixMedia.episodes.filter(episode => episode.season === seasonNumber);
+                    const episodex = episodesInSeason.find(episode => episode.number === episodeNumber);
+                    
                     if (!episodex) {
-                        console.log('Episode not found.' );
-                        return reply.status(404).send({ message: 'Episode not found' });
+                      console.log('Episode not found.' );
+                      return reply.status(404).send({ message: 'Episode not found' });
                     }
-
+                    
                     episodeId = episodex.id;
+              
               
               }
            console.log('Selected MID:', mid ,'Selected Episode ID:', episodeId);
