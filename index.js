@@ -5,7 +5,6 @@ import unidecode from 'unidecode';
 import proxy from '@fastify/http-proxy';
 //import { fetchSources } from './src/flixhq/flixhq.js';
 import cors from '@fastify/cors';
-
 const app = fastify();
 const tmdbApi = process.env.TMDB_KEY;
 const port = process.env.PORT;
