@@ -89,7 +89,7 @@ app.get('/vidsrc', async (request, reply) => {
 
             if (mid.startsWith('movie/')) {
                 //const parts = mid.split('-');
-                episodeId = mid.split('-').pop();; 
+                episodeId = mid.split('-').pop();
                 } else if (mid.startsWith('tv/') && seasonNumber && episodeNumber) {
 
                     const episodex = flixMedia.episodes.find(episode => episode.number === episodeNumber && episode.season === seasonNumber);
@@ -108,7 +108,7 @@ app.get('/vidsrc', async (request, reply) => {
             const res1 =  await flixhq.fetchEpisodeSources(episodeId, mid).catch((err) => {
                 return reply.status(404).send({ message: 'Invalid request. nix' , err});
             });
-             console.log('res1: working ', res1);
+            // console.log('res1: working ', res1);
     
             if (res1 && res) {
                 return reply.status(200).send({ data: res1 });
