@@ -17,7 +17,7 @@
     ],
     "functions":  {
         "index.js": {
-            "maxDuration": 50 
+            "maxDuration": 30 
         }
     },
     "installCommand": "npm install"
