@@ -15,5 +15,10 @@
             }
         }
     ],
+    "functions": {
+        "index.js": {
+            "maxDuration": 50 
+        }
+    },
     "installCommand": "npm install"
 }
