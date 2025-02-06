@@ -110,14 +110,7 @@ app.get('/vidsrc', async (request, reply) => {
             const res1 =  await flixhq.fetchEpisodeSources(episodeId, mid).catch((err) => {
                 return reply.status(404).send({ message: 'Invalid request. nix' , err});
             });
-            const servers = await flixhq.fetchEpisodeServers(episodeId, mid).then(data => {
-               console.log(data);
-            })
-            // console.log('res1: working ', res1);
 
-            if (servers) {
-                return reply.status(200).send({ data: servers });
-            } 
     
             if (res1 && res) {
                 return reply.status(200).send({ data: res1 });
