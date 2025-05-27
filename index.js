@@ -5,7 +5,7 @@ import unidecode from 'unidecode';
 import cors from '@fastify/cors';
 
 const app = fastify({ logger: true });
-const tmdbApi = process.env.TMDB_KEY;
+const tmdbApi = process.env.TMDB_KEY; // Ensure this is correctly set in Vercel
 
 const PROVIDER_CLASSES = {
     flixhq: MOVIES.FlixHQ,
@@ -25,13 +25,11 @@ const DEFAULT_PROVIDER_ORDER = [
     'dramacool', 'kissasian', 'viewasian', 'multimovies', 'netflixmirror',
 ].filter(key => PROVIDER_CLASSES[key]);
 
-// --- Timeouts for individual provider operations (in milliseconds) ---
-// These need to be aggressive to avoid Vercel's global timeout.
-// Max total for one provider = SEARCH_TIMEOUT + MEDIA_INFO_TIMEOUT + SOURCES_TIMEOUT
-const SEARCH_TIMEOUT = 7000;       // 3 seconds
-const MEDIA_INFO_TIMEOUT = 6000;   // 3 seconds
-const SOURCES_TIMEOUT = 7000;      // 4 seconds
-// Max time per provider: 3+3+4 = 10 seconds. If Vercel timeout is e.g. 15-30s, this allows a few to race.
+// --- Timeouts (in milliseconds) ---
+const TMDB_FETCH_TIMEOUT = 10000;   // Increased to 8 seconds for TMDB metadata call
+const SEARCH_TIMEOUT = 3000;
+const MEDIA_INFO_TIMEOUT = 3000;
+const SOURCES_TIMEOUT = 4000;
 
 app.register(cors, {
     origin: ['https://zilla-xr.xyz', 'http://localhost:5173', ...(process.env.NODE_ENV === 'development' ? ['http://127.0.0.1:5173'] : [])],
@@ -41,34 +39,29 @@ app.register(cors, {
 app.get('/', async (request, reply) => {
     return {
         intro: "Welcome to the unofficial multi-provider resolver (Fast Concurrent Mode).",
-        documentation: "API documentation: https://github.com/Inside4ndroid/AIO-StreamSource (original base)",
+        documentation: "Check GitHub for more info.",
         author: "Original by Inside4ndroid, modified for speed and failover."
     };
 });
 
-// Helper: Timeout for individual promises
-async function timeoutPromise(promise, ms, providerName, operationName, request) {
+async function timeoutPromise(promise, ms, serviceName, operationName, request) {
     let timer;
-    const timeoutError = new Error(`[${providerName}] ${operationName} timed out after ${ms}ms`);
+    const timeoutError = new Error(`[${serviceName}] ${operationName} timed out after ${ms}ms`);
     const timeout = new Promise((_, reject) => {
         timer = setTimeout(() => {
-            if (request && request.log) {
-                request.log.warn(timeoutError.message);
-            }
+            if (request && request.log) request.log.warn(timeoutError.message);
             reject(timeoutError);
         }, ms);
     });
     try {
-        const result = await Promise.race([promise, timeout]);
-        return result;
+        return await Promise.race([promise, timeout]);
     } finally {
         clearTimeout(timer);
     }
 }
 
-
-// Helper function to calculate match score (same as before)
 function calculateScore(providerItem, tmdbInfo, request) {
+    // ... (calculateScore function remains the same as previous version)
     let score = 0;
     if (!providerItem || !tmdbInfo) return 0;
     const normalizeTitle = (title) => unidecode(title.toLowerCase().replace(/[^\w\s]/gi, ''));
@@ -92,15 +85,12 @@ function calculateScore(providerItem, tmdbInfo, request) {
     const tmdbYear = String(tmdbInfo.releaseDate).substring(0, 4);
     if (providerYear && tmdbYear && providerYear === tmdbYear) score += 10;
     if (tmdbType === 'show' && providerItem.seasons && tmdbInfo.totalSeasons && providerItem.seasons === tmdbInfo.totalSeasons) score += 5;
-    // Minimal logging for score calculation to reduce noise during race
-    // if (request && request.log) request.log.debug(`[Score] "${providerItem.title}" vs "${tmdbInfo.title}": ${score}`);
     return score;
 }
 
-// Modified to return data/null or throw; incorporates individual step timeouts
 async function fetchSourcesFromSingleProvider(providerKey, providerInstance, tmdbMediaInfo, seasonNumber, episodeNumber, request) {
+    // ... (fetchSourcesFromSingleProvider function remains the same as previous version)
     const providerName = providerKey.toUpperCase();
-    // Use request.log.debug for less critical logs during race to reduce verbosity
     request.log.debug(`[${providerName}] Racing: Starting attempt...`);
     try {
         const searchTitle = unidecode(tmdbMediaInfo.title);
@@ -175,50 +165,49 @@ async function fetchSourcesFromSingleProvider(providerKey, providerInstance, tmd
             return null;
         }
     } catch (error) {
-        // Logged by timeoutPromise or if error is not a timeout
-        if (!error.message.includes('timed out')) { // Avoid double logging timeouts
+        if (!error.message.includes('timed out')) {
             request.log.warn(`[${providerName}] Racing: Error - ${error.message}`);
         }
-        throw error; // Propagate error to be caught by raceToFirstSuccess
+        throw error;
     }
 }
 
-// Custom race function: resolves with the first promise that returns a "truthy" value (i.e., actual sources)
-function raceToFirstSuccess(promiseEntries, request) { // promiseEntries: Array of { key: string, promise: Promise }
-  return new Promise((resolve, reject) => {
-    let resolved = false;
-    const errors = [];
-    let settledCount = 0;
+function raceToFirstSuccess(promiseEntries, request) {
+    // ... (raceToFirstSuccess function remains the same as previous version)
+    return new Promise((resolve, reject) => {
+        let resolved = false;
+        const errors = [];
+        let settledCount = 0;
 
-    if (!promiseEntries || promiseEntries.length === 0) {
-      reject(new Error("No promises to race."));
-      return;
-    }
+        if (!promiseEntries || promiseEntries.length === 0) {
+        reject(new Error("No promises to race."));
+        return;
+        }
 
-    promiseEntries.forEach(({ key, promise }) => {
-      promise
-        .then(value => { // value from fetchSourcesFromSingleProvider is { providerKey, sources } or null
-          if (!resolved && value && value.sources && value.providerKey === key) {
-            resolved = true;
-            request.log.info(`[RaceWin] Provider ${key.toUpperCase()} won the race.`);
-            resolve(value);
-          } else if (value === null) {
-            request.log.debug(`[Race] Provider ${key.toUpperCase()} completed but found no sources.`);
-          }
-        })
-        .catch(error => {
-          errors.push({ key, message: error.message }); // Store key with error
-          request.log.debug(`[RaceFail] Provider ${key.toUpperCase()} failed or timed out in race: ${error.message}`);
-        })
-        .finally(() => {
-          settledCount++;
-          if (settledCount === promiseEntries.length && !resolved) {
-            const errorSummary = errors.map(e => `(${e.key}: ${e.message})`).join(', ');
-            reject(new Error(`All providers failed or found no sources in race. Failures: [${errorSummary || 'No specific errors, but no data found.'}]`));
-          }
+        promiseEntries.forEach(({ key, promise }) => {
+        promise
+            .then(value => { 
+            if (!resolved && value && value.sources && value.providerKey === key) {
+                resolved = true;
+                request.log.info(`[RaceWin] Provider ${key.toUpperCase()} won the race.`);
+                resolve(value);
+            } else if (value === null) {
+                request.log.debug(`[Race] Provider ${key.toUpperCase()} completed but found no sources.`);
+            }
+            })
+            .catch(error => {
+            errors.push({ key, message: error.message }); 
+            request.log.debug(`[RaceFail] Provider ${key.toUpperCase()} failed or timed out in race: ${error.message}`);
+            })
+            .finally(() => {
+            settledCount++;
+            if (settledCount === promiseEntries.length && !resolved) {
+                const errorSummary = errors.map(e => `(${e.key}: ${e.message})`).join(', ');
+                reject(new Error(`All providers failed or found no sources in race. Failures: [${errorSummary || 'No specific errors, but no data found.'}]`));
+            }
+            });
         });
     });
-  });
 }
 
 app.get('/vidsrc', async (request, reply) => {
@@ -228,27 +217,46 @@ app.get('/vidsrc', async (request, reply) => {
     const preferredProviderKey = request.query.provider?.toLowerCase();
 
     if (!tmdbId) return reply.status(400).send({ message: "TMDB ID ('id') is required." });
+    if (!tmdbApi) {
+        request.log.error("TMDB_KEY environment variable is not set!");
+        return reply.status(500).send({ message: "Server configuration error: TMDB API key not set." });
+    }
 
     let tmdbMediaInfo;
     const tmdb = new META.TMDB(tmdbApi);
     const type = (seasonNumber !== undefined && episodeNumber !== undefined) ? 'show' : 'movie';
 
     try {
-        request.log.info(`Workspaceing TMDB for ID: ${tmdbId}, type: ${type}`);
-        const rawTmdbInfo = await timeoutPromise(tmdb.fetchMediaInfo(tmdbId, type), 5000, "TMDB", "Fetch Info", request);
+        request.log.info(`Attempting to fetch TMDB for ID: ${tmdbId}, type: ${type}`);
+        const rawTmdbInfo = await timeoutPromise(
+            tmdb.fetchMediaInfo(tmdbId, type),
+            TMDB_FETCH_TIMEOUT, // Using the defined constant
+            "TMDB", "Fetch Info", request
+        );
+
         if (!rawTmdbInfo || !rawTmdbInfo.title) {
-            return reply.status(404).send({ message: `TMDB ID ${tmdbId} not found or info incomplete.` });
+            request.log.warn(`TMDB fetch for ID ${tmdbId} (type: ${type}) returned no title or incomplete data. Raw: ${JSON.stringify(rawTmdbInfo)}`);
+            return reply.status(404).send({ message: `Media with TMDB ID ${tmdbId} (type: ${type}) not found on TMDB or TMDB returned incomplete data.` });
         }
         tmdbMediaInfo = rawTmdbInfo;
         tmdbMediaInfo.type = type;
-        request.log.info(`TMDB Info for "${tmdbMediaInfo.title}" (Type: ${type})`);
+        request.log.info(`TMDB Info for "${tmdbMediaInfo.title}" (Type: ${type}) successfully fetched.`);
     } catch (error) {
-        request.log.error(`TMDB fetch error for ID ${tmdbId}: ${error.message}`);
-        return reply.status(500).send({ message: 'Failed to fetch media information from TMDB.' });
+        // Log the actual error from TMDB attempt before sending generic client message
+        request.log.error(`CRITICAL: TMDB fetch failed for ID ${tmdbId}. Error: ${error.message}`, error.stack);
+        // Check if error message indicates an auth issue from TMDB
+        if (error.message && (error.message.toLowerCase().includes("invalid api key") || error.message.includes("authentication failed"))) {
+             return reply.status(500).send({ message: 'Failed to fetch media information from TMDB due to API key or authentication issue. Please check server configuration.' });
+        }
+        return reply.status(500).send({ message: 'Failed to fetch media information from TMDB. Check server logs for details.' });
     }
 
+    // ----- If TMDB fetch was successful, proceed to race providers -----
+    request.log.info(`TMDB fetch successful for "${tmdbMediaInfo.title}". Proceeding to race streaming providers.`);
+    
     let providersToAttemptKeys = [...DEFAULT_PROVIDER_ORDER];
     if (preferredProviderKey) {
+        // ... (provider ordering logic remains the same) ...
         if (!PROVIDER_CLASSES[preferredProviderKey]) {
             return reply.status(400).send({ message: `Provider '${preferredProviderKey}' is not supported. Supported: ${Object.keys(PROVIDER_CLASSES).join(', ')}` });
         }
@@ -258,8 +266,8 @@ app.get('/vidsrc', async (request, reply) => {
     request.log.info(`Racing providers: [${providersToAttemptKeys.join(', ')}] for "${tmdbMediaInfo.title}"`);
 
     const providerPromiseEntries = providersToAttemptKeys.map(providerKey => {
+        // ... (mapping to promise entries remains the same) ...
         const ProviderClass = PROVIDER_CLASSES[providerKey];
-        // This check should be redundant if DEFAULT_PROVIDER_ORDER is pre-filtered
         if (!ProviderClass) return null; 
         const providerInstance = new ProviderClass();
         return {
@@ -269,32 +277,36 @@ app.get('/vidsrc', async (request, reply) => {
                 seasonNumber, episodeNumber, request
             )
         };
-    }).filter(Boolean); // Remove null entries if any provider class was missing
+    }).filter(Boolean);
 
     if (providerPromiseEntries.length === 0) {
+        // ... (handling for no providers remains the same) ...
         request.log.warn("No valid providers configured or available to attempt.");
         return reply.status(404).send({ message: 'No providers available to search for sources.' });
     }
 
     try {
+        // ... (raceToFirstSuccess call and response remains the same) ...
         const winningResult = await raceToFirstSuccess(providerPromiseEntries, request);
         request.log.info(`Sources found via ${winningResult.providerKey.toUpperCase()} (raced) for "${tmdbMediaInfo.title}".`);
         return reply.status(200).send({
             message: `Sources retrieved from ${winningResult.providerKey.toUpperCase()} (raced)`,
             provider: winningResult.providerKey,
-            data: winningResult.sources // Removed tmdbInfo from here to keep payload smaller, client already has ID
+            data: winningResult.sources 
         });
-    } catch (error) { // From raceToFirstSuccess (all promises failed or returned null)
-        request.log.warn(`All providers in race failed for "${tmdbMediaInfo.title}". Error: ${error.message}`);
+    } catch (error) { 
+        request.log.warn(`All providers in race failed for "${tmdbMediaInfo.title}". Error from race: ${error.message}`);
         return reply.status(404).send({ message: error.message || 'No sources found from any provider after racing attempts.' });
     }
 });
 
 const start = async () => {
+    // ... (start function remains the same) ...
     try {
         const port = parseInt(process.env.PORT || "3001", 10);
         await app.listen({ port: port, host: '0.0.0.0' });
         app.log.info(`AIO Streamer (Fast Concurrent Mode) on port ${port}. Default provider order: [${DEFAULT_PROVIDER_ORDER.join(', ')}]`);
+        app.log.info(`TMDB fetch timeout: ${TMDB_FETCH_TIMEOUT}ms`);
         app.log.info(`Provider operation timeouts: Search=${SEARCH_TIMEOUT}ms, MediaInfo=${MEDIA_INFO_TIMEOUT}ms, Sources=${SOURCES_TIMEOUT}ms`);
     } catch (err) {
         app.log.error(err);
