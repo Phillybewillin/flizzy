@@ -28,9 +28,9 @@ const DEFAULT_PROVIDER_ORDER = [
 // --- Timeouts for individual provider operations (in milliseconds) ---
 // These need to be aggressive to avoid Vercel's global timeout.
 // Max total for one provider = SEARCH_TIMEOUT + MEDIA_INFO_TIMEOUT + SOURCES_TIMEOUT
-const SEARCH_TIMEOUT = 3000;       // 3 seconds
-const MEDIA_INFO_TIMEOUT = 3000;   // 3 seconds
-const SOURCES_TIMEOUT = 4000;      // 4 seconds
+const SEARCH_TIMEOUT = 7000;       // 3 seconds
+const MEDIA_INFO_TIMEOUT = 6000;   // 3 seconds
+const SOURCES_TIMEOUT = 7000;      // 4 seconds
 // Max time per provider: 3+3+4 = 10 seconds. If Vercel timeout is e.g. 15-30s, this allows a few to race.
 
 app.register(cors, {
