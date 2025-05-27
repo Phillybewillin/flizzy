@@ -26,10 +26,10 @@ const DEFAULT_PROVIDER_ORDER = [
 ].filter(key => PROVIDER_CLASSES[key]);
 
 // --- Timeouts (in milliseconds) ---
-const TMDB_FETCH_TIMEOUT = 10000;   // Increased to 8 seconds for TMDB metadata call
-const SEARCH_TIMEOUT = 3000;
-const MEDIA_INFO_TIMEOUT = 3000;
-const SOURCES_TIMEOUT = 4000;
+const TMDB_FETCH_TIMEOUT = 20000;   // Increased to 8 seconds for TMDB metadata call
+const SEARCH_TIMEOUT = 20000;
+const MEDIA_INFO_TIMEOUT = 20000;
+const SOURCES_TIMEOUT = 20000;
 
 app.register(cors, {
     origin: ['https://zilla-xr.xyz', 'http://localhost:5173', ...(process.env.NODE_ENV === 'development' ? ['http://127.0.0.1:5173'] : [])],
