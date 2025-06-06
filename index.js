@@ -9,20 +9,23 @@ const tmdbApi = process.env.TMDB_KEY; // Ensure this is correctly set in Vercel
 
 const PROVIDER_CLASSES = {
     flixhq: MOVIES.FlixHQ,
-    dramacool: MOVIES.DramaCool,
-    fmovies: MOVIES.Fmovies,
+    himovies: MOVIES.Himovies,
     goku: MOVIES.Goku,
-    kissasian: MOVIES.KissAsian,
     moviehdwatch: MOVIES.MovieHdWatch,
-    viewasian: MOVIES.ViewAsian,
+   // viewasian: MOVIES.ViewAsian,
     sflix: MOVIES.SFlix,
     multimovies: MOVIES.MultiMovies,
     netflixmirror: MOVIES.NetflixMirror,
+    //dramacool: MOVIES.DramaCool,
+    fmovies: MOVIES.Fmovies,
+    
+    //kissasian: MOVIES.KissAsian,
+  
 };
 
 const DEFAULT_PROVIDER_ORDER = [
-    'flixhq', 'sflix', 'goku', 'fmovies', 'moviehdwatch',
-    'dramacool', 'kissasian', 'viewasian', 'multimovies', 'netflixmirror',
+    'flixhq','himovies', 'goku', 'moviehdwatch',
+     'multimovies', 'netflixmirror', 'fmovies' ,'sflix',
 ].filter(key => PROVIDER_CLASSES[key]);
 
 // --- Timeouts (in milliseconds) ---
@@ -32,7 +35,7 @@ const MEDIA_INFO_TIMEOUT = 20000;
 const SOURCES_TIMEOUT = 20000;
 
 app.register(cors, {
-    origin: ['https://zilla-xr.xyz', 'http://localhost:5173', ...(process.env.NODE_ENV === 'development' ? ['http://127.0.0.1:5173'] : [])],
+    origin: ['https://moviepluto.fun', 'http://localhost:5173', ...(process.env.NODE_ENV === 'development' ? ['http://127.0.0.1:5173'] : [])],
     methods: ['GET', 'POST']
 });
 
