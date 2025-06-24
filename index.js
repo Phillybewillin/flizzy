@@ -1,4 +1,5 @@
 import 'dotenv/config';
+
 import fastify from 'fastify';
 import { META, MOVIES } from '@consumet/extensions';
 import unidecode from 'unidecode';
@@ -9,15 +10,15 @@ const tmdbApi = process.env.TMDB_KEY; // Ensure this is correctly set in Vercel
 
 const PROVIDER_CLASSES = {
     flixhq: MOVIES.FlixHQ,
-    himovies: MOVIES.Himovies,
+    himovies: MOVIES.HiMovies,
     goku: MOVIES.Goku,
     moviehdwatch: MOVIES.MovieHdWatch,
    // viewasian: MOVIES.ViewAsian,
-    sflix: MOVIES.SFlix,
+    //sflix: MOVIES.SFlix,
     multimovies: MOVIES.MultiMovies,
     netflixmirror: MOVIES.NetflixMirror,
     //dramacool: MOVIES.DramaCool,
-    fmovies: MOVIES.Fmovies,
+    //fmovies: MOVIES.Fmovies,
     
     //kissasian: MOVIES.KissAsian,
   
@@ -25,7 +26,7 @@ const PROVIDER_CLASSES = {
 
 const DEFAULT_PROVIDER_ORDER = [
     'flixhq','himovies', 'goku', 'moviehdwatch',
-     'multimovies', 'netflixmirror', 'fmovies' ,'sflix',
+     'multimovies', 'netflixmirror'
 ].filter(key => PROVIDER_CLASSES[key]);
 
 // --- Timeouts (in milliseconds) ---
