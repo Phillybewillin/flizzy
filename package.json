@@ -1,17 +1,17 @@
 {
-  "name": "ficky",
-  "version": "1.2.0",
+  "name": "aio-streamsource",
+  "version": "1.0.0",
   "main": "index.mjs",
   "type": "module",
   "scripts": {
-    "main": "node --watch index.js"
+    "main": "node index.js"
   },
   "keywords": [],
-  "author": "Insi",
-  "license": "none",
+  "author": "Inside4ndoid Studios",
+  "license": "GPL-3.0-only",
   "description": "An all in node to extract vidsrc keys obtain vidsrc sources and subtitles aswell as the full eporner api with a eporner source resolver.!",
   "dependencies": {
-    "@consumet/extensions": "github:consumet/extensions#master",
+    "@consumet/extensions": "github:consumet/consumet.ts#master",
     "@fastify/cors": "^10.1.0",
     "@fastify/http-proxy": "^10.0.2",
     "axios": "^1.9.0",
